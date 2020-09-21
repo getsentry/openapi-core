@@ -20,6 +20,13 @@ from openapi_core.validation.request.datatypes import (
 PATH_PARAMETER_PATTERN = r'(?:[^\/]*?)<(?:(?:.*?:))*?(\w+)>(?:[^\/]*)'
 
 
+def get_headers(request):
+    try:
+        return request.headers.items()
+    except AttributeError:
+        return [('Content-Type', 'application/json')]
+
+
 class DjangoOpenAPIRequestFactory(object):
 
     path_regex = re.compile(PATH_PARAMETER_PATTERN)
@@ -36,14 +43,14 @@ class DjangoOpenAPIRequestFactory(object):
             path_pattern = '/' + route
 
         path = request.resolver_match and request.resolver_match.kwargs or {}
+
         parameters = RequestParameters(
             path=path,
             query=request.GET,
-            header=request.headers.items(),
+            header=get_headers(request),
             cookie=request.COOKIES,
         )
-        full_url_pattern = urljoin(
-            request._current_scheme_host, path_pattern)
+        full_url_pattern = urljoin("{}://{}".format(request.scheme, request.get_host()), path_pattern)
         return OpenAPIRequest(
             full_url_pattern=full_url_pattern,
             method=method,
